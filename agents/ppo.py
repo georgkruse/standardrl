@@ -75,7 +75,7 @@ def ppo(config):
     max_grad_norm = config["max_grad_norm"]
     
     if not ray.is_initialized():
-        report_path = os.path.join(config["path"], "results.json")
+        report_path = os.path.join(config["path"], "result.json")
         with open(report_path, "w") as f:
             f.write("")
 
@@ -153,8 +153,6 @@ def ppo(config):
                     with open(report_path, "a") as f:
                         json.dump(metrics, f)
                         f.write("\n")
-                    # with open(report_path, "a") as f:
-                    #     f.write(f"{metrics}\n")
 
             if global_episodes >= 100:
                 if global_step % 1000 == 0:

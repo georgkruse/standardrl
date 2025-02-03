@@ -1,5 +1,7 @@
 # docs and experiment results can be found at https://docs.cleanrl.dev/rl-algorithms/dqn/#dqnpy
+import os
 import ray
+import json
 import random
 import time
 import gymnasium as gym
@@ -61,6 +63,11 @@ def dqn(config):
     gamma = config["gamma"]
     target_network_frequency = config["target_network_frequency"]
     tau = config["tau"]
+
+    if not ray.is_initialized():
+        report_path = os.path.join(config["path"], "results.json")
+        with open(report_path, "w") as f:
+            f.write("")
 
     device = torch.device("cuda" if torch.cuda.is_available() and cuda else "cpu")
 
@@ -156,5 +163,10 @@ def dqn(config):
             metrics["loss"] = loss.item()
 
         if (global_step > learning_starts and global_step % train_frequency == 0) or "episode" in infos:
-            ray.train.report(metrics=metrics)
+            if ray.is_initialized():
+                ray.train.report(metrics=metrics)
+            else:
+                with open(report_path, "a") as f:
+                    json.dump(metrics, f)
+                    f.write("\n")    
     envs.close()

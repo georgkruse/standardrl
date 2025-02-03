@@ -1,3 +1,5 @@
+import os
+import json
 import time
 import gymnasium as gym
 import numpy as np
@@ -47,6 +49,11 @@ def reinforce(config):
     env_id = config["env_id"]
     learning_rate = config["learning_rate"]
     gamma = config["gamma"]
+
+    if not ray.is_initialized():
+        report_path = os.path.join(config["path"], "result.json")
+        with open(report_path, "w") as f:
+            f.write("")
 
     device = torch.device("cuda" if (torch.cuda.is_available() and config["cuda"]) else "cpu")
 
@@ -114,7 +121,12 @@ def reinforce(config):
             "episode": global_episodes,
             "loss": loss.item()
         }
-        ray.train.report(metrics = metrics)
+        if ray.is_initialized():
+            ray.train.report(metrics=metrics)
+        else:
+            with open(report_path, "a") as f:
+                json.dump(metrics, f)
+                f.write("\n")
 
         print(f"Global step: {global_step}, Return: {sum(rewards)}, Loss: {loss.item()}")
 
