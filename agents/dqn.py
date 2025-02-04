@@ -11,19 +11,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from agents.replay_buffer import ReplayBuffer
-
-def make_env(env_id):
-    def thunk():
-        env = gym.make(env_id)
-        env = gym.wrappers.RecordEpisodeStatistics(env)
-        env = ContinuousEncoding(env)
-        return env
-
-    return thunk
-
-class ContinuousEncoding(gym.ObservationWrapper):
-    def observation(self, obs):
-        return np.arctan(obs)
+from utils.env_utils import make_env
 
 
 # ALGO LOGIC: initialize agent here:

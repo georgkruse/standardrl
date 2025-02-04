@@ -2,21 +2,14 @@
 import os
 import ray
 import time
+import json
 import gymnasium as gym
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.distributions.categorical import Categorical
-import json
-
-def make_env(env_id):
-    def thunk():
-        env = gym.make(env_id)
-        env = gym.wrappers.RecordEpisodeStatistics(env)
-        return env
-
-    return thunk
+from utils.env_utils import make_env
 
 
 def layer_init(layer, std=np.sqrt(2), bias_const=0.0):
