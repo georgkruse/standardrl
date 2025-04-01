@@ -18,7 +18,6 @@ if __name__ == "__main__":
     with open(args.config) as f:
         data = yaml.load(f, Loader = yaml.FullLoader)
     config = namedtuple("ObjectName", data.keys())(*data.values())
-    path = None
 
     ray.init(local_mode = config.ray_local_mode,
              num_cpus = config.num_cpus,
@@ -28,11 +27,11 @@ if __name__ == "__main__":
     
     param_space = generate_config(config)
     
-    name = datetime.datetime.now().strftime("%Y-%m-%d--%H-%M-%S") + '_' + config.method + '_'
+    name = datetime.datetime.now().strftime("%Y-%m-%d--%H-%M-%S") + '_' + config.method 
     path = os.path.join(os.getcwd(), config.ray_logging_path, name)
 
-    os.makedirs(os.path.dirname(path + '/'), exist_ok=True)
-    shutil.copy(args.config, path + '/alg_config.yml')
+    os.makedirs(os.path.dirname(path + os.sep), exist_ok=True)
+    shutil.copy(args.config, path + os.sep +'alg_config.yml')
 
     def trial_name_creator(trial):
             return trial.__str__() + '_' + trial.experiment_tag + ','
@@ -48,7 +47,7 @@ if __name__ == "__main__":
     tuner.fit()
     ray.shutdown()
 
-#     plot_tune_run(path)
+    plot_tune_run(path)
 
 
 

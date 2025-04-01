@@ -31,72 +31,97 @@ def plot_single_run(path):
     plt.grid(True)
     plt.savefig(os.path.join(path, 'training_results.png'))
 
+import os
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.interpolate import interp1d
+
 def plot_tune_run(path):
     fig, axis = plt.subplots(figsize=(8,7))
 
     paths, labels, types = [], [], []
     paths += [path]
 
-    title = '4 qubits local grid 1 env'
+    title = 'CartPole test run'
     fig_name = f'{title}'
-    data_length = 300
 
+    labels += [["lr = 0.01",
+                "lr = 0.001"]]
 
-    labels += [["0.1",
-                "0.05",
-                "0.01",
-                "0.005",
-                "0.001"
-            ]]
-
-    types += [{'0': ['=0.1'],
-            '1': ['=0.05'],
-            '2': ['=0.01'],
-            '3': ['=0.005'],
-            '4': ['=0.001']
-            }]
+    types += [{'0': ['learning_rate=0.01'],
+               '1': ['learning_rate=0.001']}]
 
     for idx, path in enumerate(paths):
-        # path = os.path.basename(os.path.normpath(path))
         curves = [[] for _ in range(len(labels[idx]))]
         curves_x = [[] for _ in range(len(labels[idx]))]
 
-
-        results_file_name = "/result.json"
-        result_files  = [f.path for f in os.scandir(path) if f.is_dir() ]
-        results = [pd.read_json(f + results_file_name,lines=True) for f in result_files]
-        result = pd.concat(results)
+        # Get subdirectories and result files
+        subdirs = [os.path.join(path, d) for d in os.listdir(path) if os.path.isdir(os.path.join(path, d))]
+        result_files = []
+        for subdir in subdirs:
+            result_files.extend([os.path.join(subdir, f) for f in os.listdir(subdir) if os.path.isdir(os.path.join(subdir, f))])
         
+        # Load JSON results
+        results = [pd.read_json(f + os.sep + 'result.json', lines=True) for f in result_files]
+        
+        # Group data by type
         for key, value in types[idx].items():
             for i, data_exp in enumerate(results):
                 if all(x in result_files[i] for x in value):
-                    curves_x[int(key)].append(data_exp['episode'].values[:data_length])
-                    curves[int(key)].append(data_exp['episodic_return'].values[:data_length])
+                    curves_x[int(key)].append(data_exp['global_step'].values)
+                    curves[int(key)].append(data_exp['episodic_return'].values)
 
+        # Process each curve
+        for id, (curve, curve_x) in enumerate(zip(curves, curves_x)):
+            if not curve:  # Skip if no data
+                continue
 
-        for id, curve in enumerate(curves):
-            data = np.vstack(curve)
+            # Define a common global_step range
+            min_step = min(x.min() for x in curve_x)
+            max_step = max(x.max() for x in curve_x)
+            common_steps = np.linspace(min_step, max_step, num=300)  # Adjust num for resolution
+
+            # Interpolate each run to the common steps
+            interpolated_returns = []
+            for x, y in zip(curve_x, curve):
+                # Remove NaNs if present
+                mask = ~np.isnan(y)
+                if mask.sum() < 2:  # Need at least 2 points for interpolation
+                    continue
+                x_clean, y_clean = x[mask], y[mask]
+                interp_func = interp1d(x_clean, y_clean, bounds_error=False, fill_value="extrapolate")
+                interpolated_returns.append(interp_func(common_steps))
+            
+            if not interpolated_returns:
+                continue
+
+            # Compute mean and std across interpolated runs
+            data = np.vstack(interpolated_returns)
             mean = np.mean(data, axis=0)
             std = np.std(data, axis=0)
-            upper = mean +  std
-            lower = mean  -  std
-            axis.plot(data_exp['episode'].values[:data_length], mean, label=labels[idx][id])
-            axis.fill_between(data_exp['episode'].values[:data_length], lower, upper, alpha=0.5)
+            upper = mean + std
+            lower = mean - std
 
+            # Plot
+            axis.plot(common_steps, mean, label=labels[idx][id])
+            axis.fill_between(common_steps, lower, upper, alpha=0.5)
 
-
-    axis.set_xlabel("$Episodes$", fontsize=13)
-    axis.set_ylabel("$Return$", fontsize=15)
+    # Customize plot
+    axis.set_xlabel("Global Step", fontsize=13)
+    axis.set_ylabel("Return", fontsize=15)
     axis.set_title(title, fontsize=15)
     axis.legend(fontsize=12, loc='lower left')
     axis.minorticks_on()
     axis.grid(which='both', alpha=0.4)
     fig.tight_layout()
-    fig.savefig(f'{fig_name}.png', dpi=100)
+    fig.savefig(f'{path}{os.sep}{fig_name}.png', dpi=100)
+    plt.close(fig)  # Close the figure to free memory
 
 
 if __name__ == "__main__":
     path = 'H:\\standardrl\\logs\\2025-02-03--14-33-26_RL_'
+    paths = "H:\\standardrl\\logs\\2025-04-01--09-27-26_RL"
     # path = 'H:\\standardrl\\logs\\2025-02-03--14-18-00_QRL_\\train_agent_2025-02-03_14-18-00\\'
-    plot_single_run(path)
-    # plot_tune_run(path)
+    # plot_single_run(path)
+    plot_tune_run(paths)
