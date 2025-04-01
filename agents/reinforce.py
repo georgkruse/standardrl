@@ -1,4 +1,5 @@
 import os
+import ray
 import json
 import time
 import gymnasium as gym
@@ -7,15 +8,8 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.distributions.categorical import Categorical
-import ray
+from utils.env_utils import make_env
 
-def make_env(env_id):
-    def thunk():
-        env = gym.make(env_id)
-        env = gym.wrappers.RecordEpisodeStatistics(env)
-        env = ContinuousEncoding(env)
-        return env
-    return thunk
 
 class ContinuousEncoding(gym.ObservationWrapper):
     def observation(self, obs):

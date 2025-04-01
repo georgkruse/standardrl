@@ -5,37 +5,48 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from glob import glob
 import numpy as np
-import re
-
-os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
-
-def plot_single_run(path):
-    # Load the results.json file
-    results_path = os.path.join(path, 'results.json')
-    
-    results = pd.read_json(results_path, lines=True)
-    # Filter out rows where 'episodic_return' exists as a key and ensure only single 'episodic_return' entries are considered
-
-    results = results[results.apply(lambda row: 'episodic_return' in row and not isinstance(row['episodic_return'], type(np.nan)), axis=0)]
-    # Extract episode_return and global_step
-    episode_returns = results['episodic_return'].values
-    global_steps = results['global_step'].values  
-
-    # Plot episode_return vs. global_step
-    plt.figure(figsize=(10, 5))
-    plt.plot(global_steps, episode_returns, label='Episode Return')
-    plt.xlabel('Global Step')
-    plt.ylabel('Episode Return')
-    plt.title('Episode Return vs. Global Step')
-    plt.legend()
-    plt.grid(True)
-    plt.savefig(os.path.join(path, 'training_results.png'))
 
 import os
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.interpolate import interp1d
+
+os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
+
+def plot_single_run(path):
+    # Load the results.json file
+    results_path = os.path.join(path, 'result.json')
+    
+    results = pd.read_json(results_path, lines=True)
+
+    results_selected_returns = results[pd.notna(results['episodic_return'])]
+    episode_returns = results_selected_returns['episodic_return'].values
+    global_steps_rewards = results_selected_returns['global_step'].values
+
+    results_selected_loss = results[pd.notna(results['loss'])]
+    episode_losses = results_selected_loss['loss'].values
+    global_steps_loss = results_selected_loss['global_step'].values
+
+    # Plot episode_return vs. global_step
+    plt.figure(figsize=(10, 5))
+    plt.plot(global_steps_rewards, episode_returns, label='Episode Return')
+    plt.xlabel('Global Step')
+    plt.ylabel('Episode Return')
+    plt.title('Episode Return vs. Global Step')
+    plt.legend()
+    plt.grid(True)
+    plt.savefig(os.path.join(path, 'training_results_reward.png'))
+
+    plt.figure(figsize=(10, 5))
+    plt.plot(global_steps_loss, episode_losses, label='Episode Loss')
+    plt.xlabel('Global Step')
+    plt.ylabel('Episode Loss')
+    plt.title('Episode Return vs. Global Step')
+    plt.legend()
+    plt.grid(True)
+    plt.savefig(os.path.join(path, 'training_results_loss.png'))
+
 
 def plot_tune_run(path):
     fig, axis = plt.subplots(figsize=(8,7))
@@ -120,7 +131,6 @@ def plot_tune_run(path):
 
 
 if __name__ == "__main__":
-    path = 'H:\\standardrl\\logs\\2025-02-03--14-33-26_RL_'
     paths = "H:\\standardrl\\logs\\2025-04-01--09-27-26_RL"
     # path = 'H:\\standardrl\\logs\\2025-02-03--14-18-00_QRL_\\train_agent_2025-02-03_14-18-00\\'
     # plot_single_run(path)
