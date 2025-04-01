@@ -1,17 +1,18 @@
-ray_local_mode: False
-num_cpus:       6
-num_gpus:       0
-method:         RL
-ray_logging_path: logs/
-ray_num_trial_samples:  3
-type:                   train
-cpus_per_worker:        3
-gpus_per_worker:        0
+tune_config:  
+  trial_path:             logs
+  trial_name:             dqn_cartpole
+  ray_local_mode:         False
+  num_cpus:               6
+  num_gpus:               0
+  method:                 RL
+  ray_num_trial_samples:  2
+  cpus_per_worker:        1
+  gpus_per_worker:        0
 
 algorithm_config:
   env_id:   "CartPole-v1"
   agent:               DQN
-  total_timesteps:    10000
+  total_timesteps:    1000
   learning_rate:          
     - grid_search
     - float

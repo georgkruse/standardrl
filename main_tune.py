@@ -9,17 +9,6 @@ from utils.train_utils import train_agent
 from utils.plotting_utils import plot_tune_run
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description = "This parser receives the yaml config file")
-    parser.add_argument("--config", default = "configs/dqn_default.yaml")
-    args = parser.parse_args()
-
-    with open(args.config) as f:
-        data = yaml.load(f, Loader = yaml.FullLoader)
-    config = namedtuple("ObjectName", data.keys())(*data.values())
-
-    ray.init(local_mode = config.ray_local_mode,
-             num_cpus = config.num_cpus,
-             num_gpus=config.num_gpus,
     # Specify the path to the config file
     config_path = 'configs/dqn_default.yaml'
 
@@ -49,14 +38,7 @@ if __name__ == "__main__":
              _temp_dir=os.path.join(os.getcwd(), 'logs', 'tmp_ray_logs'),
              include_dashboard = False)
     
-    param_space = generate_config(config)
-    
-    name = datetime.datetime.now().strftime("%Y-%m-%d--%H-%M-%S") + '_' + config.method 
-    path = os.path.join(os.getcwd(), config.ray_logging_path, name)
-
-    os.makedirs(os.path.dirname(path + os.sep), exist_ok=True)
-    shutil.copy(args.config, path + os.sep +'alg_config.yml')
-
+    # We need an addtional function to create subfolders for each hyperparameter configuration
     def trial_name_creator(trial):
         return trial.__str__() + '_' + trial.experiment_tag + ','
     
@@ -73,9 +55,4 @@ if __name__ == "__main__":
 
     # After the experiment is done, we will plot the results.
     ray.shutdown()
-
     plot_tune_run(path)
-
-
-
-
